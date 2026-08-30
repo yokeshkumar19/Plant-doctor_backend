@@ -150,5 +150,5 @@ Important:
         print("AI ERROR:", str(e))
         raise HTTPException(
             status_code=500,
-            detail="Unable to analyze the image."
+            detail=f"Unable to analyze the image: {str(e)}"
         )
