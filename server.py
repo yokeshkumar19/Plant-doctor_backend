@@ -1,6 +1,5 @@
 import os
 import base64
-import json
 import re
 from io import BytesIO
 
@@ -108,47 +107,27 @@ Important:
             response_format={"type":"json_object"}
         )
 
-        result_text = response.choices[0].message.content or ""
-
+        result = response.choices[0].message.content
         print("=== RAW RESULT START ===")
-        print(result_text)
+        print(result)
         print("=== RAW RESULT END ===")
 
-        # Parse the model response into a real JSON object.
-        # The model is instructed to return JSON, but this also tolerates
-        # accidental surrounding text.
-        try:
-            result_data = json.loads(result_text)
-        except json.JSONDecodeError:
-            json_match = re.search(r"\\{.*\\}", result_text, re.DOTALL)
-
-            if not json_match:
-                raise ValueError("AI returned invalid JSON.")
-
-            result_data = json.loads(json_match.group(0))
-
-        # Make sure the fields expected by the frontend always exist.
-        result_data = {
-            "plant": str(result_data.get("plant", "Unknown")),
-            "condition": str(result_data.get("condition", "Uncertain")),
-            "confidence": str(result_data.get("confidence", "Low")),
-            "symptoms": str(result_data.get("symptoms", "")),
-            "care": str(result_data.get("care", "")),
-            "warning": str(result_data.get("warning", "")),
-        }
+        json_match = re.search(r'\{.*\}', result, re.DOTALL)
+        if json_match:
+            result = json_match.group(0)
 
         print("=== CLEANED RESULT START ===")
-        print(json.dumps(result_data, ensure_ascii=False, indent=2))
+        print(result)
         print("=== CLEANED RESULT END ===")
 
         return {
             "success": True,
-            "result": result_data
+            "result": result
         }
 
     except Exception as e:
         print("AI ERROR:", str(e))
         raise HTTPException(
             status_code=500,
-            detail=f"Unable to analyze the image: {str(e)}"
+            detail="Unable to analyze the image."
         )
